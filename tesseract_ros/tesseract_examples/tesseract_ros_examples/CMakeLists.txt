@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   tesseract_rosutils
   octomap_ros
   pcl_conversions
+  control_msgs
 )
 
 find_package(trajopt REQUIRED)
@@ -202,6 +203,39 @@ target_include_directories(${PROJECT_NAME}_pick_and_place_example_node PUBLIC
 target_include_directories(${PROJECT_NAME}_pick_and_place_example_node SYSTEM PUBLIC
     ${catkin_INCLUDE_DIRS})
 
+
+add_library(${PROJECT_NAME}_freespace_srv_example src/freespace_srv_example.cpp)
+target_link_libraries(${PROJECT_NAME}_freespace_srv_example tesseract::tesseract tesseract::tesseract_motion_planners_trajopt ${catkin_LIBRARIES})
+target_compile_options(${PROJECT_NAME}_freespace_srv_example PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
+if(CXX_FEATURE_FOUND EQUAL "-1")
+    target_compile_options(${PROJECT_NAME}_freespace_srv_example PRIVATE -std=c++11)
+else()
+    target_compile_features(${PROJECT_NAME}_freespace_srv_example PRIVATE cxx_std_11)
+endif()
+target_include_directories(${PROJECT_NAME}_freespace_srv_example PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>")
+target_include_directories(${PROJECT_NAME}_freespace_srv_example SYSTEM PUBLIC
+    ${catkin_INCLUDE_DIRS})
+
+add_executable(${PROJECT_NAME}_freespace_srv_example_node src/freespace_srv_example_node.cpp)
+target_link_libraries(${PROJECT_NAME}_freespace_srv_example_node ${PROJECT_NAME}_freespace_srv_example ${catkin_LIBRARIES})
+target_compile_options(${PROJECT_NAME}_freespace_srv_example_node PRIVATE -Wsuggest-override -Wconversion -Wsign-conversion)
+if(CXX_FEATURE_FOUND EQUAL "-1")
+    target_compile_options(${PROJECT_NAME}_freespace_srv_example_node PRIVATE -std=c++11)
+else()
+    target_compile_features(${PROJECT_NAME}_freespace_srv_example_node PRIVATE cxx_std_11)
+endif()
+target_include_directories(${PROJECT_NAME}_freespace_srv_example_node PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include>")
+target_include_directories(${PROJECT_NAME}_freespace_srv_example_node SYSTEM PUBLIC
+    ${catkin_INCLUDE_DIRS})
+
+
+
+
+  
 # Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}
   DESTINATION include
@@ -222,6 +256,8 @@ install(
     ${PROJECT_NAME}_car_seat_example_node
     ${PROJECT_NAME}_pick_and_place_example
     ${PROJECT_NAME}_pick_and_place_example_node
+    ${PROJECT_NAME}_freespace_srv_example
+    ${PROJECT_NAME}_freespace_srv_example_node
     ${PROJECT_NAME}_puzzle_piece_auxillary_axes_example
     ${PROJECT_NAME}_puzzle_piece_auxillary_axes_example_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

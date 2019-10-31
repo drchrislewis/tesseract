@@ -32,29 +32,23 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "freespace_srv_example_node");
   ros::NodeHandle pnh("~");
-  ros::NodeHandle nh;
 
-  bool plotting = true;
-  bool rviz = true;
-  int steps = 5;
-  bool write_to_file = false;
+  // initialize parameters to default values
+  int steps          = 5;
   std::string planning_server_name("jv_planner");
   
   // Get ROS Parameters
-  pnh.param("plotting", plotting, plotting);
-  pnh.param("rviz", rviz, rviz);
   pnh.param("steps", steps, steps);
-  pnh.param("write_to_file", write_to_file, write_to_file);
   pnh.param("server_name", planning_server_name, planning_server_name);
-
-  FreespaceSrvExample example(nh, plotting, rviz, steps, write_to_file, planning_server_name);
+  
+  FreespaceSrvExample example(planning_server_name, steps);
 
   if(!example.setup())
     {
-      ROS_ERROR("unable to setup FreespaceSrvExample");
+      ROS_ERROR("FreespaceSrvExample setup failed");
       return 0;
     }
-
+  
   ros::spin();
   return 0;
 }

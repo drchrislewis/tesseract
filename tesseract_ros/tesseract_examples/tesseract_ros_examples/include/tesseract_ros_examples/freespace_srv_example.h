@@ -26,13 +26,23 @@
 #ifndef TESSERACT_ROS_EXAMPLES_FREESPACE_SRV_EXAMPLE_H
 #define TESSERACT_ROS_EXAMPLES_FREESPACE_SRV_EXAMPLE_H
 
+
 #include <tesseract_common/macros.h>
 TESSERACT_COMMON_IGNORE_WARNINGS_PUSH
 #include <trajopt/problem_description.hpp>
+#include <tesseract_msgs/ModifyEnvironment.h>
+#include <tesseract_msgs/GetEnvironmentChanges.h>
+#include <ros/console.h>
+#include <ros/service_client.h>
+#include <memory>
 #include <string>
 #include <ros/ros.h>
 TESSERACT_COMMON_IGNORE_WARNINGS_POP
 
+#include <tesseract_common/macros.h>
+#include <tesseract/tesseract.h>
+#include <tesseract_rosutils/utils.h>
+#include <tesseract_rosutils/conversions.h>
 #include <tesseract_common/types.h>
 #include <tesseract_ros_examples/example.h>
 #include <tesseract_rosutils/plotting.h>
@@ -45,41 +55,28 @@ namespace tesseract_ros_examples
  * @brief An example of a robot picking up a box and placing it on a shelf leveraging
  * tesseract and trajopt to generate the motion trajectory.
  */
-class FreespaceSrvExample : public Example
+class FreespaceSrvExample
 {
  public:
   typedef actionlib::SimpleActionServer<control_msgs::JointTrajectoryAction> JointValuesServer;
   
- FreespaceSrvExample(ros::NodeHandle nh, bool plotting, bool rviz, int steps, bool write_to_file, std::string srv_name)
-   : Example(plotting, rviz), nh_(nh), steps_(steps), write_to_file_(write_to_file),
-    joint_value_server_(nh_, srv_name, boost::bind(&FreespaceSrvExample::jointValueCallBack, this, _1), false)
-      {
-	if(!nh_.getParam("robot_description", urdf_xml_string_))
-	  {
-	    ROS_ERROR("FreespaceSrvExample must have robot_description defined on parameter server");
-	  }
-	if(!nh_.getParam("robot_description_semantic", srdf_xml_string_))
-	  {
-	    ROS_ERROR("FreespaceSrvExample must have robot_description_semantic defined on parameter server");
-	  }
-      }
+  FreespaceSrvExample(std::string jv_srv_name, int steps);
   ~FreespaceSrvExample() = default;
-  bool run() override;
-  bool setup();
-  void jointValueCallBack(const control_msgs::JointTrajectoryGoalConstPtr& goal)
-  {
-    ROS_ERROR("position, %lf", goal->trajectory.points[0]);
-  }
+  tesseract::Tesseract::Ptr tesseract_;     /**< @brief Tesseract Manager Class */
 
+  void jointValueCallBack(const control_msgs::JointTrajectoryGoalConstPtr& goal);
+
+  bool setup();
+  
  private:
   ros::NodeHandle nh_;
-  int steps_;
-  bool write_to_file_;
   JointValuesServer joint_value_server_;
+  int steps_;
   std::string urdf_xml_string_;
   std::string srdf_xml_string_;
-  tesseract_rosutils::ROSPlottingPtr plotter_;
-
+  std::string manipulator_;
+  std::string end_effector_;
+  std::unordered_map<std::string, double> desired_joint_states_;
 };
 
 }  // namespace tesseract_ros_examples

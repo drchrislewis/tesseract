@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="steps" default="10"/>
+    <arg name="server_name" default="freespace_plan"/>
+    <arg name="manipulator" default="manipulator"/>
+    <arg name="end_effector" default="tool0"/>
+    
+    <!-- Load Robot Model    -->
+    <param name="robot_description"  command="$(find xacro)/xacro --inorder $(find tesseract_ros_examples)/urdf/pick_and_place_plan.xacro"/>
+
+    <!-- Load Robot Semantic -->
+    <param name="robot_description_semantic" textfile="$(find tesseract_ros_examples)/config/pick_and_place_plan.srdf" />
+
+    <!-- Launch GUI to drive joints   -->
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+    
+    <!-- Launch robot state publisher - may need to remap to /iiwa/joints..-->
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
+    <!-- Launch freespace planner service node -->
+    <node name="tesseract_ros_examples_freespace_srv_example_node" pkg="tesseract_ros_examples" type="tesseract_ros_examples_freespace_srv_example_node" output="screen">
+      <param name="steps" value="$(arg steps)"/>
+      <param name="server_name" value="$(arg server_name)"/>
+      <param name="manipulator" value="$(arg manipulator)"/>
+      <param name="end_effector" value="$(arg end_effector)"/>
+    </node>
+
+</launch>

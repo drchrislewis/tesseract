@@ -63,13 +63,15 @@ struct TrajOptPlannerDefaultConfig : public TrajOptPlannerConfig
   std::string manipulator;
   /** @brief This is the tip link in the kinematics object used for the cartesian positions ***REQUIRED*** */
   std::string link;
+
+  /** @brief The QP solver used in the SQP optimization routine */
+  sco::ModelType optimizer = sco::ModelType::AUTO_SOLVER;
+
   /**
    * @brief Vector of TCP transforms. This should contain either one transform to be applied to all waypoints
    * or a separate transform for each waypoint
    */
   tesseract_common::VectorIsometry3d tcp;
-  /** @brief The QP solver used in the SQP optimization routine */
-  sco::ModelType optimizer = sco::ModelType::AUTO_SOLVER;
 
   /** @brief The target tool waypoints */
   std::vector<Waypoint::Ptr> target_waypoints;
@@ -102,6 +104,8 @@ struct TrajOptPlannerDefaultConfig : public TrajOptPlannerConfig
   std::vector<double> acceleration_coeff;
   /** @brief If true, a joint jerk cost with a target of 0 will be applied for all timesteps Default: false*/
   bool smooth_jerks = true;
+  /** @brief This default to all ones, but allows you to weight different joints */
+  Eigen::VectorXd jerk_coeff;
 
   /** @brief Error function that is set as a constraint for each timestep.
    *

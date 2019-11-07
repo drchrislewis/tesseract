@@ -234,8 +234,22 @@ trajopt::TermInfo::Ptr
 createSmoothVelocityTermInfo(const int n_steps, const int n_joints, const double coeff, const std::string& name)
 {
   std::shared_ptr<trajopt::JointVelTermInfo> jv = std::make_shared<trajopt::JointVelTermInfo>();
-  jv->coeffs = std::vector<double>(n_joints, coeff);
-  jv->targets = std::vector<double>(n_joints, 0.0);
+  jv->coeffs = std::vector<double>(static_cast<std::size_t>(n_joints), coeff);
+  jv->targets = std::vector<double>(static_cast<std::size_t>(n_joints), 0.0);
+  jv->first_step = 0;
+  jv->last_step = n_steps - 1;
+  jv->name = name;
+  jv->term_type = trajopt::TT_COST;
+  return jv;
+}
+
+trajopt::TermInfo::Ptr createSmoothVelocityTermInfo(const int n_steps,
+                                                    const Eigen::Ref<const Eigen::VectorXd>& coeff,
+                                                    const std::string& name)
+{
+  std::shared_ptr<trajopt::JointVelTermInfo> jv = std::make_shared<trajopt::JointVelTermInfo>();
+  jv->coeffs = std::vector<double>(coeff.data(), coeff.data() + coeff.size());
+  jv->targets = std::vector<double>(static_cast<std::size_t>(coeff.size()), 0.0);
   jv->first_step = 0;
   jv->last_step = n_steps - 1;
   jv->name = name;
@@ -260,8 +274,22 @@ trajopt::TermInfo::Ptr
 createSmoothAccelerationTermInfo(const int n_steps, const int n_joints, const double coeff, const std::string& name)
 {
   std::shared_ptr<trajopt::JointAccTermInfo> ja = std::make_shared<trajopt::JointAccTermInfo>();
-  ja->coeffs = std::vector<double>(n_joints, coeff);
-  ja->targets = std::vector<double>(n_joints, 0.0);
+  ja->coeffs = std::vector<double>(static_cast<std::size_t>(n_joints), coeff);
+  ja->targets = std::vector<double>(static_cast<std::size_t>(n_joints), 0.0);
+  ja->first_step = 0;
+  ja->last_step = n_steps - 1;
+  ja->name = name;
+  ja->term_type = trajopt::TT_COST;
+  return ja;
+}
+
+trajopt::TermInfo::Ptr createSmoothAccelerationTermInfo(const int n_steps,
+                                                        const Eigen::Ref<const Eigen::VectorXd>& coeff,
+                                                        const std::string& name)
+{
+  std::shared_ptr<trajopt::JointAccTermInfo> ja = std::make_shared<trajopt::JointAccTermInfo>();
+  ja->coeffs = std::vector<double>(coeff.data(), coeff.data() + coeff.size());
+  ja->targets = std::vector<double>(static_cast<std::size_t>(coeff.size()), 0.0);
   ja->first_step = 0;
   ja->last_step = n_steps - 1;
   ja->name = name;
@@ -286,13 +314,48 @@ trajopt::TermInfo::Ptr
 createSmoothJerkTermInfo(const int n_steps, const int n_joints, const double coeff, const std::string& name)
 {
   std::shared_ptr<trajopt::JointJerkTermInfo> jj = std::make_shared<trajopt::JointJerkTermInfo>();
-  jj->coeffs = std::vector<double>(n_joints, coeff);
-  jj->targets = std::vector<double>(n_joints, 0.0);
+  jj->coeffs = std::vector<double>(static_cast<std::size_t>(n_joints), coeff);
+  jj->targets = std::vector<double>(static_cast<std::size_t>(n_joints), 0.0);
   jj->first_step = 0;
   jj->last_step = n_steps - 1;
   jj->name = name;
   jj->term_type = trajopt::TT_COST;
   return jj;
+}
+
+trajopt::TermInfo::Ptr createSmoothJerkTermInfo(const int n_steps,
+                                                const Eigen::Ref<const Eigen::VectorXd>& coeff,
+                                                const std::string& name)
+{
+  std::shared_ptr<trajopt::JointJerkTermInfo> jj = std::make_shared<trajopt::JointJerkTermInfo>();
+  jj->coeffs = std::vector<double>(coeff.data(), coeff.data() + coeff.size());
+  jj->targets = std::vector<double>(static_cast<std::size_t>(coeff.size()), 0.0);
+  jj->first_step = 0;
+  jj->last_step = n_steps - 1;
+  jj->name = name;
+  jj->term_type = trajopt::TT_COST;
+  return jj;
+}
+
+trajopt::TermInfo::Ptr createUserDefinedTermInfo(const int n_steps,
+                                                 const sco::VectorOfVector::func error_function,
+                                                 const sco::MatrixOfVector::func jacobian_function,
+                                                 const std::string& name)
+{
+  if (error_function == nullptr)
+  {
+    throw std::runtime_error("TrajOpt Planner Config constraint from error function recieved nullptr!");
+  }
+
+  auto ef = std::make_shared<trajopt::UserDefinedTermInfo>();
+  ef->name = name;
+  ef->term_type = trajopt::TT_COST;
+  ef->first_step = 0;
+  ef->last_step = n_steps - 1;
+  ef->error_function = error_function;
+  ef->jacobian_function = jacobian_function;
+
+  return ef;
 }
 
 }  // namespace tesseract_motion_planners

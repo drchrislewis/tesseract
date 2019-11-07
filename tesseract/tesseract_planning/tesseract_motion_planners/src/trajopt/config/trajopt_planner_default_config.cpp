@@ -106,13 +106,13 @@ std::shared_ptr<trajopt::ProblemConstructionInfo> TrajOptPlannerDefaultConfig::g
     WaypointTermInfo term_info;
     if (tcp.size() == target_waypoints.size())
     {
-      term_info =
-          createWaypointTermInfo(target_waypoints[ind], ind, pci.kin->getJointNames(), adjacency_links, link, tcp[ind]);
+      term_info = createWaypointTermInfo(
+          target_waypoints[ind], static_cast<int>(ind), pci.kin->getJointNames(), adjacency_links, link, tcp[ind]);
     }
     else
     {
       term_info = createWaypointTermInfo(
-          target_waypoints[ind], ind, pci.kin->getJointNames(), adjacency_links, link, tcp.front());
+          target_waypoints[ind], static_cast<int>(ind), pci.kin->getJointNames(), adjacency_links, link, tcp.front());
     }
 
     pci.cnt_infos.insert(pci.cnt_infos.end(), term_info.cnt.begin(), term_info.cnt.end());
@@ -167,7 +167,11 @@ std::shared_ptr<trajopt::ProblemConstructionInfo> TrajOptPlannerDefaultConfig::g
   }
   if (smooth_jerks)
   {
-    pci.cost_infos.push_back(createSmoothJerkTermInfo(pci.basic_info.n_steps, pci.kin->numJoints()));
+    if (jerk_coeff.size() == 0)
+      pci.cost_infos.push_back(
+          createSmoothJerkTermInfo(pci.basic_info.n_steps, static_cast<int>(pci.kin->numJoints())));
+    else
+      pci.cost_infos.push_back(createSmoothJerkTermInfo(pci.basic_info.n_steps, jerk_coeff));
   }
   if (configuration != nullptr)
   {
@@ -182,6 +186,24 @@ std::shared_ptr<trajopt::ProblemConstructionInfo> TrajOptPlannerDefaultConfig::g
     pci.cost_infos.push_back(jp);
   }
 
+  if (!constraint_error_functions.empty())
+  {
+    for (std::size_t i = 0; i < constraint_error_functions.size(); ++i)
+    {
+      auto& c = constraint_error_functions[i];
+      trajopt::TermInfo::Ptr ti =
+          createUserDefinedTermInfo(pci.basic_info.n_steps, c.first, c.second, "user_defined_" + std::to_string(i));
+
+      // Update the term info with the (possibly) new start and end state indices for which to apply this cost
+      std::shared_ptr<trajopt::UserDefinedTermInfo> ef = std::static_pointer_cast<trajopt::UserDefinedTermInfo>(ti);
+      ef->term_type = trajopt::TT_CNT;
+      ef->first_step = cost_first_step;
+      ef->last_step = cost_last_step;
+
+      pci.cnt_infos.push_back(ef);
+    }
+  }
+
   return std::make_shared<trajopt::ProblemConstructionInfo>(pci);
 }
 
@@ -194,39 +216,6 @@ bool TrajOptPlannerDefaultConfig::generate()
     return false;
   }
   prob = trajopt::ConstructProblem(*pci);
-
-  for (std::size_t i = 0; i < constraint_error_functions.size(); ++i)
-  {
-    auto& c = constraint_error_functions[i];
-    if (c.first == nullptr)
-    {
-      CONSOLE_BRIDGE_logError("Failed to create constraint from error function, nullptr was provided!");
-      return false;
-    }
-
-    for (int s = 0; s < pci->basic_info.n_steps; ++s)
-    {
-      if (c.second == nullptr)
-      {
-        prob->addConstraint(
-            std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(c.first),
-                                                                    prob->GetVarRow(s, 0, pci->kin->numJoints()),
-                                                                    Eigen::VectorXd::Ones(0),
-                                                                    sco::EQ,
-                                                                    "ConstraintErrFunc_" + std::to_string(i)));
-      }
-      else
-      {
-        prob->addConstraint(
-            std::make_shared<trajopt::TrajOptConstraintFromErrFunc>(sco::VectorOfVector::construct(c.first),
-                                                                    sco::MatrixOfVector::construct(c.second),
-                                                                    prob->GetVarRow(s, 0, pci->kin->numJoints()),
-                                                                    Eigen::VectorXd::Ones(0),
-                                                                    sco::EQ,
-                                                                    "ConstraintErrFunc_" + std::to_string(i)));
-      }
-    }
-  }
 
   return true;
 }

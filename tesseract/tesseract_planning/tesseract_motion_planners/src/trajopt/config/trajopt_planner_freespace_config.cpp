@@ -98,8 +98,12 @@ std::shared_ptr<trajopt::ProblemConstructionInfo> TrajOptPlannerFreespaceConfig:
     int ind = num_steps - 1;
     if (tcp.size() == target_waypoints.size())
     {
-      term_info = createWaypointTermInfo(
-          target_waypoints.back(), ind, pci.kin->getJointNames(), adjacency_links, link, tcp[ind]);
+      term_info = createWaypointTermInfo(target_waypoints.back(),
+                                         ind,
+                                         pci.kin->getJointNames(),
+                                         adjacency_links,
+                                         link,
+                                         tcp[static_cast<std::size_t>(ind)]);
     }
     else
     {
@@ -145,15 +149,27 @@ std::shared_ptr<trajopt::ProblemConstructionInfo> TrajOptPlannerFreespaceConfig:
   }
   if (smooth_velocities)
   {
-    pci.cost_infos.push_back(createSmoothVelocityTermInfo(pci.basic_info.n_steps, pci.kin->numJoints()));
+    if (velocity_coeff.size() == 0)
+      pci.cost_infos.push_back(
+          createSmoothVelocityTermInfo(pci.basic_info.n_steps, static_cast<int>(pci.kin->numJoints())));
+    else
+      pci.cost_infos.push_back(createSmoothVelocityTermInfo(pci.basic_info.n_steps, velocity_coeff));
   }
   if (smooth_accelerations)
   {
-    pci.cost_infos.push_back(createSmoothAccelerationTermInfo(pci.basic_info.n_steps, pci.kin->numJoints()));
+    if (acceleration_coeff.size() == 0)
+      pci.cost_infos.push_back(
+          createSmoothAccelerationTermInfo(pci.basic_info.n_steps, static_cast<int>(pci.kin->numJoints())));
+    else
+      pci.cost_infos.push_back(createSmoothAccelerationTermInfo(pci.basic_info.n_steps, acceleration_coeff));
   }
   if (smooth_jerks)
   {
-    pci.cost_infos.push_back(createSmoothJerkTermInfo(pci.basic_info.n_steps, pci.kin->numJoints()));
+    if (jerk_coeff.size() == 0)
+      pci.cost_infos.push_back(
+          createSmoothJerkTermInfo(pci.basic_info.n_steps, static_cast<int>(pci.kin->numJoints())));
+    else
+      pci.cost_infos.push_back(createSmoothJerkTermInfo(pci.basic_info.n_steps, jerk_coeff));
   }
   if (configuration != nullptr)
   {
@@ -166,6 +182,24 @@ std::shared_ptr<trajopt::ProblemConstructionInfo> TrajOptPlannerFreespaceConfig:
     jp->last_step = cost_last_step;
 
     pci.cost_infos.push_back(jp);
+  }
+
+  if (!constraint_error_functions.empty())
+  {
+    for (std::size_t i = 0; i < constraint_error_functions.size(); ++i)
+    {
+      auto& c = constraint_error_functions[i];
+      trajopt::TermInfo::Ptr ti =
+          createUserDefinedTermInfo(pci.basic_info.n_steps, c.first, c.second, "user_defined_" + std::to_string(i));
+
+      // Update the term info with the (possibly) new start and end state indices for which to apply this cost
+      std::shared_ptr<trajopt::UserDefinedTermInfo> ef = std::static_pointer_cast<trajopt::UserDefinedTermInfo>(ti);
+      ef->term_type = trajopt::TT_CNT;
+      ef->first_step = cost_first_step;
+      ef->last_step = cost_last_step;
+
+      pci.cnt_infos.push_back(ef);
+    }
   }
 
   return std::make_shared<trajopt::ProblemConstructionInfo>(pci);

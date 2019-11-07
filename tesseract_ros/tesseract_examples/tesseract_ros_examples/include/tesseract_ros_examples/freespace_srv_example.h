@@ -47,7 +47,12 @@ TESSERACT_COMMON_IGNORE_WARNINGS_POP
 #include <tesseract_ros_examples/example.h>
 #include <tesseract_rosutils/plotting.h>
 #include <actionlib/server/simple_action_server.h>
-#include <control_msgs/JointTrajectoryAction.h>
+#include <actionlib/client/simple_action_client.h>
+#include <control_msgs/JointTrajectoryAction.h> // types for the action implemented by this object
+#include <control_msgs/JointTrajectoryActionGoal.h>
+#include <control_msgs/FollowJointTrajectoryAction.h> // types for the client called to stream the motion to the robot
+#include <control_msgs/FollowJointTrajectoryGoal.h>
+#include <control_msgs/FollowJointTrajectoryResult.h>
 
 namespace tesseract_ros_examples
 {
@@ -67,7 +72,8 @@ class FreespaceSrvExample
   void jointValueCallBack(const control_msgs::JointTrajectoryGoalConstPtr& goal);
 
   bool setup();
-  
+  bool motion_streaming(trajectory_msgs::JointTrajectory robot_traj);
+
  private:
   ros::NodeHandle nh_;
   JointValuesServer joint_value_server_;
